@@ -1,4 +1,4 @@
-FROM minizinc/minizinc:latest
+FROM gurobi/python:latest
 
 # Update the package list
 RUN apt-get update
@@ -6,7 +6,7 @@ RUN apt-get update
 # Install Python
 RUN apt-get install -y python3 python3-pip
 
-# Copy Minizinc model, Python script and data folder
+# Copy Python script and data folder
 WORKDIR /app
 
 # Install libraries
@@ -21,6 +21,6 @@ RUN mkdir -p ./src
 # Adding files
 COPY src/* ./src
 COPY inst/* ./inst
+COPY lic/gurobi.lic /opt/gurobi/gurobi.lic
 
 ENTRYPOINT ["python3", "./src/main.py"]
-
