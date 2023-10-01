@@ -1,12 +1,10 @@
 {
-    "chuffed": {
-        "time": 3,
+	"chuffed": {
+        "time": 4,
         "optimal": "true",
         "obj": 226,
         "sol": [
-            [
-                16
-            ],
+            [],
             [
                 7,
                 5

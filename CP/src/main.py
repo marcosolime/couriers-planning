@@ -38,6 +38,10 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data):
     for i in range(m):
         tmp_nodes = []
         next_node = tour[n+i]
+        # Idle courier: no clients visited
+        if next_node > n+m:
+            sol.append([])
+            continue
         tmp_nodes.append(next_node)
         while True:
             next_node = tour[next_node-1]
