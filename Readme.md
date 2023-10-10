@@ -56,6 +56,8 @@ We explored two alternatives:
 Eg: `docker run gurobi-img inst01.dat`
 Eg: `docker run pulp-img inst01.dat`
 
+Note: To run the Gurobi subpackage you need to provide your personal Gurobi license (we used an academic license). You can see how to obtain a license on the official Gurobi website. Once you have the license, under GurobiAPI folder create a folder named lic and copy your license there. Finally, build and run the docker image.
+
 ## TODOs
 
 - CP
