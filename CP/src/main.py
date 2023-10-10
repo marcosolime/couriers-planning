@@ -5,6 +5,7 @@ MCVRP (Multiple Capacity Vechicle Routing Problem)
 # Libraries
 from minizinc import Instance, Model, Solver
 import numpy as np
+import numpy.ma as ma
 import datetime
 import time
 import sys
@@ -12,11 +13,16 @@ import json
 
 # Print the solution
 def has_solution(result, elapsed_time):
+    print(f'Time elapsed: {round(elapsed_time)}')
+    
     if result.status.has_solution():
-        print(f'Solution found in {round(elapsed_time)} seconds')
+        if elapsed_time >= 299:
+            print('Time exceeded, but we have at least one feasible solution.')
+        else:
+            print('Optimal solution found before timeout.')
         return True
     else:
-        print(f"No solution found before the timeout ({round(elapsed_time)}).")
+        print(f"No solution found before the timeout.")
         return False
 
 def print_solution(result, m, n, elapsed_time, str_solver, str_data):
@@ -28,7 +34,7 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data):
     int_load = best_sol.int_load
     
     is_optimal = 'true'
-    if elapsed_time > 300:
+    if elapsed_time >= 299:
         is_optimal = 'false'
     
     obj = best_sol.objective
@@ -68,14 +74,53 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data):
     print(f'Courier: {courier}')
     print(f'Traveled: {traveled}')
     print(f'Int. load: {int_load}')
+    print(to_json)
+
+def read_data(lines):
+    m = int(lines[0].rstrip('\n'))      # n. couriers
+    n = int(lines[1].rstrip('\n'))      # n. items
+    v = n + 1                           # n. verteces
+    l = list(map(int, lines[2].rstrip('\n').split()))   # courier size
+    s = list(map(int, lines[3].rstrip('\n').split()))   # item size
+    d = np.zeros((n+1,n+1))   # distance matrix
+    for i in range(n+1):
+        d_row = list(map(int, lines[i+4].rstrip('\n').split()))
+        for j in range(n+1):
+            d[i,j] = d_row[j]
+    d = d.astype(int)
+    return m, n, v, l, s, d
+
+def low_up_bound(d, n, v):
+    # Lower bound
+    lowBound = np.min(d[-1,:-1])
+
+    # Upper bound with greedy approach (Nearest Neighbor)
+    upBound = 0
+    min_index = n
+    mask = [False for _ in range(v)]
+    mask[min_index] = True
+    next_nodes = ma.array(d[min_index,:], mask=mask) # At the beginning, everything but the depot is available
+    
+    while True:
+        upBound += next_nodes.min()         # Neigbhour not masked node with minimum distance
+        min_index = next_nodes.argmin()
+
+        mask[min_index] = True              # The node becomes masked (visited)
+        next_nodes = ma.array(d[min_index,:], mask=mask)
+
+        if np.all(mask):                            # If all the nodes are visited
+            upBound += d[min_index, n]              # we go back to depot and stop
+            break
+    
+    return lowBound, upBound
 
 # Main
 # Usage: python3 main.py <gecode/chuffed> <instXY.dat>
 def main(argv):
     if len(argv) < 3:
         print('Error: Insufficient n. of parameters provided')
-        print(f'Expected: 2, Provided: {len(argv)-1}')
-        print('Usage: docker run --rm <container-name> <solver> <data.dat>')
+        print(f'Expected: 2, provided: {len(argv)-1}')
+        print('Usage: docker run --rm <image-name> <gecode/chuffed> <data.dat>')
         sys.exit(1)
     
     # Gather parameters
@@ -94,19 +139,13 @@ def main(argv):
             lines.append(line)
     
     # Read data
-    m = int(lines[0].rstrip('\n'))      # n. couriers
-    n = int(lines[1].rstrip('\n'))      # n. items
-    l = list(map(int, lines[2].rstrip('\n').split()))   # courier size
-    s = list(map(int, lines[3].rstrip('\n').split()))   # item size
-    d = np.zeros((n+1,n+1))   # distance matrix
-    for i in range(n+1):
-        d_row = list(map(int, lines[i+4].rstrip('\n').split()))
-        for j in range(n+1):
-            d[i,j] = d_row[j]
-    d = d.astype(int)
+    m, n, v, l, s, d = read_data(lines)
 
-    # Reduction of number of couriers
-    # [TODO]
+    # Preprocessing
+    lowBound, upBound = low_up_bound(d, n, v)
+
+    # Debug
+    # print(lowBound, upBound)
 
     # Feed params to the model
     instance['m'] = m
@@ -114,6 +153,8 @@ def main(argv):
     instance['l'] = l
     instance['s'] = s
     instance['d'] = d
+    instance['lowBound'] = lowBound
+    instance['upBound'] = upBound
 
     # Solve and keep track of time elapsed
     start_time = time.time()

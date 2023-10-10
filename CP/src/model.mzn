@@ -29,14 +29,17 @@ array[NODE,NODE] of int: dx =
         endif
     | i,j in NODE ]);
 
+% OBJECTIVE BOUNDS
+int: lowBound;                              % lower bound
+int: upBound;                               % upper bound
 
 % VARIABLES
-array[NODE] of var NODE: next;                 % following nodes
-array[NODE] of var NODE: back;                 % previous nodes
-array[NODE] of var COURIER: courier;           % couriers assignments
-array[NODE] of var 0..max(l): int_load;        % intermediate load of couriers
-array[COURIER] of var int: traveled;           % distance traveled by each courier
-var int: obj;                                  % max distance to minimize
+array[NODE] of var NODE: next;                              % following nodes
+array[NODE] of var NODE: back;                              % previous nodes
+array[NODE] of var COURIER: courier;                        % couriers assignments
+array[NODE] of var 0..max(l): int_load;                     % intermediate load of couriers
+array[COURIER] of var lowBound..upBound: traveled;          % distance traveled by each courier
+var int: obj;                                               % max distance to minimize
 
 % CONSTRAINTS
 
@@ -77,7 +80,7 @@ constraint forall(i in NODE) (back[next[i]] = i);
 /*
     Constraint 5:
     We create an unique TSP-like circuit, 
-    using the custom global constraint
+    using a global constraint
 */
 constraint circuit(next);
 constraint circuit(back);
@@ -99,7 +102,7 @@ constraint forall(i in ITEM)(int_load[i]+s[i] = int_load[next[i]]);
 /*
     Constraint 8:
     We check whether the the accumulated weight
-    went over the courier's capacity
+    went over the courier capacity
 */
 constraint forall(i in ITEM)(int_load[i] <= l[courier[i]]);
 constraint forall(i in COURIER)(l[i] >= int_load[n+m+i]);
@@ -119,8 +122,8 @@ constraint forall(i,j in COURIER)
 /*
     Constraint 10:
     We avoid symmetric paths, that is distributing the same items but in opposite order.
-    Actually, this is a wrong assumption if the matrix is not symmetric, thas is 
-    d[i,j] != d[j,i] from some i,j in NODE. To let the model find optimal solutions 
+    Actually, this is a wrong assumption if the matrix is not symmetric, that is 
+    d[i,j] != d[j,i] for i,j in NODE. To let the model find optimal solutions 
     with non-symmetric matrices, we relax this constraint.
 */
 /*
@@ -133,27 +136,37 @@ function var int: getnext(var int: i, int: c) =
 constraint forall(c in COURIER) (lex_less([getback(j,c) | j in NODE], [getnext(i,c) | i in NODE]));
 */
 
+/*
+    Constraint 11:
+    Couriers with more capacity deliver more weight than smaller or equal couriers
+*/
+constraint forall(i,j in COURIER)
+    ((l[i]>l[j] /\ i!=j) -> int_load[n+m+i] >= int_load[n+m+j]);
+
 % OBJECTIVE
 constraint forall(i in COURIER)(traveled[i] = sum(j in NODE where courier[j]==i)(dx[j,next[j]]));
 constraint obj = max(traveled);
 
 /*
     Solve strategies:
-    - With Gecode we used a combination of dom_w_deg and first_fail
-    - With Chuffed we mostly kept the default search
-    - Note: relax_and_reconstruct terribly slows down the search
+    - With Gecode we use a combination of dom_w_deg and first_fail
+    - With Chuffed we mostly keep the default search
+    - Note: On small instances, restarting methods slow down the search
 */
 
 solve
-/*
 :: seq_search(
     [int_search(next, dom_w_deg, indomain_random),
     int_search(back, dom_w_deg, indomain_random),
     int_search(courier, first_fail, indomain_random),
     int_search(int_load, first_fail, indomain_min),
-    relax_and_reconstruct(next, 90),
-    restart_luby(n*n)
+    relax_and_reconstruct(next, 92)
     ])
-*/
 minimize obj;
 
+/*
+    restart_luby(n*n)
+    restart_geometric(2.0, n*n)
+*/
+
+/* solve minimize obj; */

@@ -14,9 +14,9 @@ COPY requirements.txt ./
 RUN pip3 install -r ./requirements.txt
 
 # Creating inst, res and src folders
+RUN mkdir -p ./src
 RUN mkdir -p ./inst
 RUN mkdir -p ./res
-RUN mkdir -p ./src
 
 # Adding files
 COPY src/* ./src
