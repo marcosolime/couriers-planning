@@ -32,6 +32,7 @@ We modeled our problem using MiniZinc, and solved it with Gecode and Chuffed. Ad
 2. Run the image: `docker run <image-name> <solver-name> <instance-name>`
 
 Eg: `docker run mini-img gecode inst01.dat`
+
 Eg: `docker run mini-img chuffed inst01.dat`
 
 ## SMT - Satifiability Modulo Theory
