@@ -42,6 +42,7 @@ We created the model using Z3Py Python library, and solved it with Z3.
 2. Run the image: `docker run <image-name> <instance-name>`
 
 Eg: `docker run z3-img inst01.dat`
+
 Eg: `docker run z3-img inst01.dat`
 
 ## MIP - Mixed Integer Linear Programming
@@ -54,6 +55,7 @@ We explored two alternatives:
 2. Run the image: `docker run <image-name> <instance-name>`
 
 Eg: `docker run gurobi-img inst01.dat`
+
 Eg: `docker run pulp-img inst01.dat`
 
 Note: To run the Gurobi subpackage you need to provide your personal Gurobi license (we used an academic license). You can see how to obtain a license on the official Gurobi website. Once you have the license, under GurobiAPI folder create a folder named lic and copy your license there. Finally, build and run the docker image.
