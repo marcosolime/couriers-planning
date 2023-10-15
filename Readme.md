@@ -76,9 +76,10 @@ Note: To run the Gurobi subpackage you need to provide your personal Gurobi lice
 		3. Generate json for instances 0-21 without simmetry constraints
 
 - SMT
-	1. Write the model in Z3Py
-	2. Generate json for instances 0-21 with simmetry constraints
-	3. Generate json for instances 0-21 without simmetry constraints
+	1. ~~Write the model in Z3Py~~
+	2. Write symmetries
+	3. Generate json for instances 0-21 with simmetry constraints
+	4. Generate json for instances 0-21 without simmetry constraints
 
 - Other stuff
 	* Write the project repot (Overleaf)
