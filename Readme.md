@@ -64,8 +64,8 @@ Note: To run the Gurobi subpackage you need to provide your personal Gurobi lice
 ## TODOs
 
 - CP
-	1. Generate json for instances 0-21 with no simmetry constraints using Chuffed
-	2. Generate json for instances 0-21 with no simmetry constraints using Gecode
+	1. ~~Generate json for instances 0-21 with no simmetry constraints using Chuffed~~
+	2. ~~Generate json for instances 0-21 with no simmetry constraints using Gecode~~
 
 - MIP
 	* Gurobi API
