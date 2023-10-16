@@ -1,11 +1,22 @@
 {
+    "gecode": {
+        "time": 1, 
+        "optimal": "true", 
+        "obj": 12, 
+        "sol": [[5, 6, 3], [4, 2], [7, 1]]
+    },
+    "chuffed": {
+        "time": 1, 
+        "optimal": "true", 
+        "obj": 12, 
+        "sol": [[5, 6, 3], [4, 2], [1, 7]]
+    },
     "gecode_sb": {
-        "time": 0,
-        "optimal": "true",
-        "obj": 12,
+        "time": 1, 
+        "optimal": "true", 
+        "obj": 12, 
         "sol": [[5, 4, 2], [3, 7], [6, 1]]
     },
-    
 	"chuffed_sb": {
         "time": 0,
         "optimal": "true",

@@ -1,4 +1,16 @@
 {
+    "gecode": {
+        "time": 300, 
+        "optimal": "false", 
+        "obj": 256, 
+        "sol": [[8], [1, 10], [6], [9], [4], [7], [2, 5], [3]]
+    },
+    "chuffed": {
+        "time": 19, 
+        "optimal": "true", 
+        "obj": 186, 
+        "sol": [[6], [7], [1], [2], [8], [4, 5], [3, 10], [9]]
+    },
     "chuffed_sb": {
         "time": 50,
         "optimal": "true",
