@@ -102,16 +102,12 @@ def main(argv):
 
     # Constraints
 
-    # Keep track of the distance travelled by each courier
-    for k in range(m):
-        model += tot_load[k] == lpSum([x[i][j][k]*s[j] for i in range(v) for j in range(n)])
-
-    # (0) Avoid looping aroung the same node
+    # (1) Avoid looping aroung the same node
     for i in range(v):
         for k in range(m):
             model += x[i][i][k] == 0
 
-    # (1) Each node is visited once
+    # (2) Each node is visited once
     for j in range(n):
         model += lpSum([x[i][j][k] for k in range(m) for i in range(v)]) == 1
     '''
@@ -120,21 +116,22 @@ def main(argv):
         model += lpSum([x[i][j][k] for k in range(m) for j in range(v)]) == 1
     '''
         
-    # (2) Each vehicle depart and arrives at the depot
+    # (3) Each vehicle depart and arrives at the depot once
     for k in range(m):
         model += lpSum([x[n][j][k] for j in range(n)]) == 1   # leave once
         model += lpSum([x[i][n][k] for i in range(n)]) == 1   # arrive once
-    
-    # (3) If we reach a delivery point, we leave it with the same courier
+
+    # (4) Load constraint
+    for k in range(m):
+        model += tot_load[k] == lpSum([x[i][j][k]*s[j] for i in range(v) for j in range(n)])
+        model += tot_load[k] <= l[k]
+
+    # (5) N. arcs in is equal to N. arcs out
     for k in range(m):
         for j in range(v):
             model += lpSum([x[i][j][k] for i in range(v)]) == lpSum([x[j][i][k] for i in range(v)])
 
-    # (4) Load constraint
-    for k in range(m):
-        model += tot_load[k] <= l[k]
-
-    # (5) Subtour elimination with Big-M trick
+    # (6) Subtour elimination with Big-M trick
     M = 1e5
     model += u[n] == 1
     for k in range(m):
@@ -151,19 +148,18 @@ def main(argv):
             for k in range(m):
                 model += x[i][j][k] * u[j] >= x[i][j][k] * (u[i]+1)
     '''
-
+    
+    # (7) Keep track of the traveled distances
+    for k in range(m):
+        model += lpSum([x[i][j][k]*d[i,j] for i in range(v) for j in range(v)]) == dist[k]
+        model += z >= dist[k]
+    
     # (Sym break 1)
-    # (Couriers with more capacity deliver more weight than smaller or equal couriers)
+    # (Couriers with more capacity deliver more weight than smaller couriers)
     for k1 in range(m):
         for k2 in range(m):
             if k1!=k2 and is_bigger_mat[k1,k2]:
                 model += tot_load[k1] >= tot_load[k2]
-
-
-    # (6) For each courier we calculate their distance
-    for k in range(m):
-        model += lpSum([x[i][j][k]*d[i,j] for i in range(v) for j in range(v)]) == dist[k]
-        model += z >= dist[k]
 
     # (Solving)
     start_time = time.time()
