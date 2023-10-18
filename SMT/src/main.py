@@ -3,6 +3,7 @@ import numpy as np
 import numpy.ma as ma
 from z3 import *
 import json
+import time
 
 def read_data(lines):
     m = int(lines[0].rstrip('\n'))                      # n. couriers
@@ -19,10 +20,10 @@ def read_data(lines):
     return m, n, v, l, s, d
 
 def on_model(model, params):
-    x, m, v = params
+    x, obj, m, v, start_time = params
+    elapsed_time = time.time() - start_time
     sol = get_solution(m, v, model, x)
-    obj = Int('obj')
-    dump_to_json('z3', 300, False, model[obj], sol)
+    dump_to_json('z3', round(elapsed_time), False, model[obj], sol, True)
 
 def exactly_k(vars, k):
   '''
@@ -106,7 +107,7 @@ def get_solution(m, v, model, x):
         sol.append(tmp_nodes)
     return sol
 
-def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol):
+def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol, is_intermediate):
     '''
     === Arguments ===
 
@@ -115,7 +116,8 @@ def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol):
     is_optimal:         True is optimal, False if unknown
     obj:                best found objective value
     sol:                list of nodes visited by each couriers
-
+    is_intermediate:    True if it is a solution found during search, False if final solution
+    
     === Description ===
 
     Writes the solution under res folder in json format
@@ -131,9 +133,13 @@ def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol):
     with open('./res/' + str_data, 'w') as json_file:
         json.dump(to_json, json_file, indent=4)
     
+    if is_intermediate:
+        print('Intermediate solution dumped to json in res folder')
+    else:
+        print('Final solution dumped to json in res folder')
     print(to_json)
-    print('Solutions dumped to json in res folder')
-
+    print()
+    
 def print_courier_load(m, model, tot_load, l):
     print('Courier loads:')
     for i in range(m):
@@ -171,7 +177,8 @@ def main(argv):
 
     # Solver
     solver = Optimize()
-    solver.set_on_model(lambda model: on_model(model, (x,m,v)))
+    params = (x, obj, m, v, time.time())
+    solver.set_on_model(lambda model: on_model(model, params))
     solver.set('maxsat_engine', 'core_maxsat')
     solver.set('timeout', TIMEOUT*1000)
 
@@ -261,7 +268,7 @@ def main(argv):
         sol = get_solution(m, v, model, x)
 
         # Dumping to json
-        dump_to_json('z3', elapsed_time, is_optimal, model[obj], sol)
+        dump_to_json('z3', elapsed_time, is_optimal, model[obj], sol, False)
 
     elif status == unknown:
         print('Status: UNKNOWN')
