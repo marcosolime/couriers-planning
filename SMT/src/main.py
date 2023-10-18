@@ -40,7 +40,7 @@ def exactly_k(vars, k):
 
 def low_up_bound(d, n, v):
     # Lower bound
-    lowBound = np.min(d[-1,:-1])
+    lowBound = 2 * np.min(d[-1,:-1])
 
     # Upper bound with greedy approach (Nearest Neighbor)
     upBound = 0
@@ -141,9 +141,14 @@ def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol, is_intermediate
     print()
     
 def print_courier_load(m, model, tot_load, l):
-    print('Courier loads:')
+    print('- courier load')
     for i in range(m):
-        print(f'Courier {i}: {model[tot_load[i]]}/{l[i]}')
+        print(f'\t- courier {i}: {model[tot_load[i]]}/{l[i]}')
+
+def print_courier_dist(m, model, dist, lowBound, upBound):
+    print(f'- covered distance (bounds: {lowBound}-{upBound})')
+    for i in range(m):
+        print(f'\t- courier {i}: {model[dist[i]]}')
 
 def main(argv):
     TIMEOUT = 300
@@ -165,8 +170,11 @@ def main(argv):
     m, n, v, l, s, d = read_data(lines)
 
     # Preprocessing
-    # lowBound, upBound = low_up_bound(d, n, v)
+    lowBound, upBound = low_up_bound(d, n, v)
     is_bigger_mat = get_is_bigger_matrix(m, l)
+
+    # Debug
+    # print(lowBound, upBound)
 
     # Variables
     x = [[[Bool(f'x_{i}_{j}_{k}') for k in range(m)] for j in range(v)] for i in range(v)]
@@ -185,8 +193,9 @@ def main(argv):
     # Constraints
 
     # Setting bounds
-    #for k in range(m):
-    #    solver.add(dist[k] <= upBound)
+    for k in range(m):
+        solver.add(dist[k] <= upBound)
+        solver.add(dist[k] >= lowBound)
 
     # (1) Avoid looping aroung the same node
     for i in range(v):
@@ -264,6 +273,9 @@ def main(argv):
         # Print courier total load
         print_courier_load(m, model, tot_load, l)
         
+        # Print courier total distance
+        print_courier_dist(m, model, dist, lowBound, upBound)
+
         # Gathering the routes
         sol = get_solution(m, v, model, x)
 
