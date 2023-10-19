@@ -92,7 +92,7 @@ def read_data(lines):
 
 def low_up_bound(d, n, v):
     # Lower bound
-    lowBound = np.min(d[-1,:-1])
+    lowBound = 2 * np.min(d[-1,:-1])
 
     # Upper bound with greedy approach (Nearest Neighbor)
     upBound = 0
