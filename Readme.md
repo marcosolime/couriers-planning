@@ -80,7 +80,7 @@ Note: To run the Gurobi subpackage you need to provide your personal Gurobi lice
 
 - SMT
 	1. ~~Write the model in Z3Py~~
-	2. Write symmetries
+	2. ~~Write symmetries~~
 	3. Generate json for instances 0-21 with simmetry constraints
 	4. Generate json for instances 0-21 without simmetry constraints
 

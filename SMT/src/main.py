@@ -82,6 +82,26 @@ def get_is_bigger_matrix(m, l):
                 is_bigger_mat[i,j] = True
     return is_bigger_mat
 
+def get_is_equal_matrix(m, l):
+    '''
+    === Arguments ===
+
+    m:          number of couriers
+    l:          list of courier capacities
+
+    === Returns ===
+
+    Numpy boolean array of shape (m,m) where item in [i,j]
+    is True if courier i has equal capacity than courier j; 
+    False otherwise.
+    '''
+    is_equal_mat = np.zeros((m,m), dtype=bool)
+    for i in range(m):
+        for j in range(m):
+            if l[i] == l[j]:
+                is_equal_mat[i,j] = True
+    return is_equal_mat
+
 def get_solution(m, v, model, x):
     sol = []
     for k in range(m):
@@ -172,6 +192,7 @@ def main(argv):
     # Preprocessing
     lowBound, upBound = low_up_bound(d, n, v)
     is_bigger_mat = get_is_bigger_matrix(m, l)
+    is_equal_mat = get_is_equal_matrix(m, l)
 
     # Debug
     # print(lowBound, upBound)
@@ -192,7 +213,7 @@ def main(argv):
 
     # Constraints
 
-    # Setting bounds
+    # Setting objective bounds
     for k in range(m):
         solver.add(dist[k] <= upBound)
         solver.add(dist[k] >= lowBound)
@@ -243,6 +264,16 @@ def main(argv):
         for k2 in range(m):
             if k1!=k2 and is_bigger_mat[k1,k2]:
                 solver.add(tot_load[k1] >= tot_load[k2])
+
+    # (Sym break 2)
+    # (Couriers with same capacity do different routes)
+    for k1 in range(m):
+        for k2 in range(m):
+            if k1>k2 and is_equal_mat[k1,k2]:
+                for i in range(v):
+                    for j in range(v):
+                        solver.add(Not(And(x[i][j][k1], x[i][j][k2])))
+
 
     # (OBJ) Minimize the longest distance
     solver.minimize(obj)
