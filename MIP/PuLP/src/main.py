@@ -47,18 +47,45 @@ def low_up_bound(d, n, v):
     
     return lowBound, upBound
 
-'''
-Boolean matrix of size mxm (n.couriers x n.couriers)
-Returns a matrix where item at [i,j] is True if courier
-i has more capacity than courier j; False otherwise.
-'''
 def get_is_bigger_matrix(m, l):
+    '''
+    === Arguments ===
+
+    m:          number of couriers
+    l:          list of courier capacities
+
+    === Returns ===
+
+    Numpy boolean array of shape (m,m) where item in [i,j]
+    is True if courier i has more capacity than courier j; 
+    False otherwise.
+    '''
     is_bigger_mat = np.zeros((m,m), dtype=bool)
     for i in range(m):
         for j in range(m):
             if l[i] > l[j]:
                 is_bigger_mat[i,j] = True
     return is_bigger_mat
+
+def get_is_equal_matrix(m, l):
+    '''
+    === Arguments ===
+
+    m:          number of couriers
+    l:          list of courier capacities
+
+    === Returns ===
+
+    Numpy boolean array of shape (m,m) where item in [i,j]
+    is True if courier i has equal capacity than courier j; 
+    False otherwise.
+    '''
+    is_equal_mat = np.zeros((m,m), dtype=bool)
+    for i in range(m):
+        for j in range(m):
+            if l[i] == l[j]:
+                is_equal_mat[i,j] = True
+    return is_equal_mat
 
 def main(argv):
     TIMELIMIT = 300     # We let the solver run for this amount of seconds
@@ -83,6 +110,7 @@ def main(argv):
     # Preprocessing
     lowBound, upBound = low_up_bound(d, n, v)
     is_bigger_mat = get_is_bigger_matrix(m, l)
+    is_equal_mat = get_is_equal_matrix(m, l)
 
     # The model 
     model = LpProblem("Couriers", sense=LpMinimize)
@@ -102,7 +130,7 @@ def main(argv):
 
     # Constraints
 
-    # (1) Avoid looping aroung the same node
+    # (1) Avoid looping around the same node
     for i in range(v):
         for k in range(m):
             model += x[i][i][k] == 0
@@ -161,6 +189,15 @@ def main(argv):
             if k1!=k2 and is_bigger_mat[k1,k2]:
                 model += tot_load[k1] >= tot_load[k2]
 
+    # (Sym break 2)
+    # (Courieres with same capacity do different paths)
+    for k1 in range(m):
+        for k2 in range(m):
+            if k1>k2 and is_equal_mat[k1,k2]:
+                for i in range(v):
+                    for j in range(v):
+                        model += x[i][j][k1] + x[i][j][k2] < 2
+
     # (Solving)
     start_time = time.time()
     model.solve(solver)
@@ -171,6 +208,7 @@ def main(argv):
     if elapsed_time >= TIMELIMIT-TIMEDELTA:
         is_optimal = False
 
+    print('Done.')
     if model.status != LpStatusInfeasible:
         print(f'Elapsed time: {round(elapsed_time)} second(s)')
         if is_optimal:
