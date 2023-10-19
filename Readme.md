@@ -69,7 +69,7 @@ Note: To run the Gurobi subpackage you need to provide your personal Gurobi lice
 
 - MIP
 	* Gurobi API
-		1. Implement constraint 9 (couriers with the same capacity do different routes)
+		1. ~~Implement constraint 9 (couriers with the same capacity do different routes)~~
 		2. Generate json for instances 0-21 with simmetry constraints
 		3. Generate json for instances 0-21 without simmetry constraints
 

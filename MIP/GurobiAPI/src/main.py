@@ -12,6 +12,18 @@ import json
 import gurobipy as gp
 
 def get_is_bigger_matrix(m, l):
+    '''
+    === Arguments ===
+
+    m:          number of couriers
+    l:          list of courier capacities
+
+    === Returns ===
+
+    Numpy boolean array of shape (m,m) where item in [i,j]
+    is True if courier i has more capacity than courier j; 
+    False otherwise.
+    '''
     is_bigger_mat = np.zeros((m,m), dtype=bool)
     for i in range(m):
         for j in range(m):
@@ -19,23 +31,44 @@ def get_is_bigger_matrix(m, l):
                 is_bigger_mat[i,j] = True
     return is_bigger_mat
 
-'''
-A:              set of indexes corresponding to the 3D boolean matrix
-N:              set of the items
-V:              set of the items plus depot
-K:              set of the couriers
-C:              dictionary of capacities
-W:              dictionary of weights
-D:              dictionary of distances
-n:              number of items
-v:              number of items + depot
-lb:             lower bound on traveled route
-ub:             upper bound on traveled route
-max_capacity:   biggest courier
-light_item:     lightest item
-is_bigger_mat:  capacity pairwise courier matrix
-'''
-def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bigger_mat):
+def get_is_equal_matrix(m, l):
+    '''
+    === Arguments ===
+
+    m:          number of couriers
+    l:          list of courier capacities
+
+    === Returns ===
+
+    Numpy boolean array of shape (m,m) where item in [i,j]
+    is True if courier i has equal capacity than courier j; 
+    False otherwise.
+    '''
+    is_equal_mat = np.zeros((m,m), dtype=bool)
+    for i in range(m):
+        for j in range(m):
+            if l[i] == l[j]:
+                is_equal_mat[i,j] = True
+    return is_equal_mat
+
+def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bigger_mat, is_equal_mat):
+    '''
+    A:              set of indexes corresponding to the 3D boolean matrix
+    N:              set of the items
+    V:              set of the items plus depot
+    K:              set of the couriers
+    C:              dictionary of capacities
+    W:              dictionary of weights
+    D:              dictionary of distances
+    n:              number of items
+    v:              number of items + depot
+    lb:             lower bound on traveled route
+    ub:             upper bound on traveled route
+    max_capacity:   biggest courier
+    light_item:     lightest item
+    is_bigger_mat:  2d boolean matrix of shape (m,m). matrix[i,j] = True if load[i] > load[j]
+    is_equal_mat:   2d boolean matrix of shape (m,m). matrix[i,j] = True if load[i] == load[j] 
+    '''
     model = gp.Model('Couriers')
 
     # Variables
@@ -82,6 +115,16 @@ def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bi
             if k1 != k2 and is_bigger_mat[k1-1,k2-1]:
                 model.addConstr(tot_load[k1] >= tot_load[k2])
 
+    # (Sym break 2)
+    # (Couriers with equal capacity do different paths)
+    for k1 in K:
+        for k2 in K:
+            if k1 > k2 and is_equal_mat[k1-1,k2-1]:
+                for i in V:
+                    for j in V:
+                        if i != j:
+                            model.addConstr(x[i,j,k1] <= 1 - x[i,j,k2])
+
     # Objective: minimize the maximum distance
     model.setObjective(z, sense=gp.GRB.MINIMIZE)
     
@@ -103,7 +146,7 @@ def read_data(lines):
 
 def low_up_bound(d, n, v):
     # Lower bound
-    lowBound = np.min(d[-1,:-1])
+    lowBound = 2 * np.min(d[-1,:-1])
 
     # Upper bound with greedy approach (Nearest Neighbor)
     upBound = 0
@@ -125,15 +168,15 @@ def low_up_bound(d, n, v):
     
     return lowBound, upBound
 
-'''
-m:      n. of couriers
-n:      n. of items
-v:      n. of items + depot
-s:      list of item sizes
-l:      list of courier capacities
-d:      distance matrix
-'''
 def get_sets(m, n, v, s, l, d):
+    '''
+    m:      n. of couriers
+    n:      n. of items
+    v:      n. of items + depot
+    s:      list of item sizes
+    l:      list of courier capacities
+    d:      distance matrix
+    '''
     K = [i+1 for i in range(m)]                                         # set of couriers
     N = [i+1 for i in range(n)]                                         # set of items
     V = N + [v]                                                         # set of items + depot
@@ -168,9 +211,10 @@ def main(argv):
     max_capacity = max(l)
     light_item = min(s)
     is_bigger_mat = get_is_bigger_matrix(m, l)
+    is_equal_mat = get_is_equal_matrix(m, l)
 
     # The Model
-    model, x = get_model(A, N, V, K, C, W, D, n, v, lowBound, upBound, max_capacity, light_item, is_bigger_mat)
+    model, x = get_model(A, N, V, K, C, W, D, n, v, lowBound, upBound, max_capacity, light_item, is_bigger_mat, is_equal_mat)
 
     # Model configs
     model.setParam('TimeLimit', 300)
@@ -192,7 +236,7 @@ def main(argv):
         print("Optimization has reached the time limit")
     
     else:
-        print("Solver did not converge to an optimal or suboptimal solution.")
+        print("Solver did not converge to an optimal or sub-optimal solution.")
         sys.exit(1)
 
 
