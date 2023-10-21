@@ -1,5 +1,11 @@
 FROM python:3.10-slim
 
+# Update the package list
+RUN apt-get update
+
+# Install Python
+RUN apt-get install -y python3 python3-pip
+
 # Copy Python script and data folder
 WORKDIR /app
 
