@@ -196,7 +196,7 @@ def main(argv):
             if k1>k2 and is_equal_mat[k1,k2]:
                 for i in range(v):
                     for j in range(v):
-                        model += x[i][j][k1] + x[i][j][k2] < 2
+                        model += x[i][j][k1] + x[i][j][k2] <= 1
 
     # (Solving)
     start_time = time.time()
