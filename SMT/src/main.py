@@ -40,7 +40,10 @@ def exactly_k(vars, k):
 
 def low_up_bound(d, n, v):
     # Lower bound
-    lowBound = 2 * np.min(d[-1,:-1])
+    distances = []
+    for i in range(n):
+        distances.append(d[-1, i] + d[i, -1])
+    lowBound = min(distances)
 
     # Upper bound with greedy approach (Nearest Neighbor)
     upBound = 0

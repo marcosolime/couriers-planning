@@ -25,7 +25,7 @@ def has_solution(result, elapsed_time):
         print(f"No solution found before the timeout.")
         return False
 
-def print_solution(result, m, n, elapsed_time, str_solver, str_data):
+def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound):
     # We get the optimal solution (last in the list)
     best_sol = result.solution[-1]
     tour = best_sol.next
@@ -74,6 +74,7 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data):
     print(f'Courier: {courier}')
     print(f'Traveled: {traveled}')
     print(f'Int. load: {int_load}')
+    print(f'Upper bound: {upBound}, Lower bound: {lowBound}')
     print(to_json)
 
 def read_data(lines):
@@ -92,7 +93,10 @@ def read_data(lines):
 
 def low_up_bound(d, n, v):
     # Lower bound
-    lowBound = 2 * np.min(d[-1,:-1])
+    distances = []
+    for i in range(n):
+        distances.append(d[-1, i] + d[i, -1])
+    lowBound = min(distances)
 
     # Upper bound with greedy approach (Nearest Neighbor)
     upBound = 0
@@ -166,7 +170,7 @@ def main(argv):
     # we set optimal = False and show the model
     has_sol = has_solution(result, elapsed_time)
     if has_sol:
-        print_solution(result, m, n, elapsed_time, str_solver, str_data)
+        print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound)
 
 
 if __name__ == '__main__':
