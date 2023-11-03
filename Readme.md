@@ -1,5 +1,7 @@
 # Vehicle Routing Problem
 
+![sample_instance_1](RouteTracer/out/out_chuffed.png)
+
 ## Problem Description
 We are given a fleet of couriers and a set of items that must be distributed to a set of clients. All the couriers start at the same location (depot), whereas the customers are located in different positions on a 2D flat region. Each courier comes with a fixed capacity, meaning that we can stuff items till a given threshold; each item has its relative weight.
 The goal of the problem is to plan a route for each courier, reaching all the customers while not exceeding the courier capacities. To be fair, we want to minimize the longest distance travelled by any courier. This way, we expect to have a balanced division among the drivers in term of traveled distance.
