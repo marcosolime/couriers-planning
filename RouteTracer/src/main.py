@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import MDS
 
-
 def read_data(lines):
     m = int(lines[0].rstrip('\n'))      # n. couriers
     n = int(lines[1].rstrip('\n'))      # n. items
@@ -140,16 +139,11 @@ def main(argv):
             plt.arrow(start_point[0], start_point[1], dx, dy, color=color, linestyle='dashed', head_width=0.03, head_length=0.03)
 
     # print(connections)
+    plot_path = f'./out/out_{str_data.split(".")[0]}_{solver}.png'
     plt.grid()
-    plt.savefig(f'./out/out_{solver}.png')
+    plt.savefig(plot_path)
     plt.show()
-    print(f'Info: plot saved in out/out_{solver}.png')
-    # Write distances and weights
-
-    # Put legends with colors
-
-    # Save to png
-
+    print(f'Info: plot saved in {plot_path}')
 
 if __name__ == '__main__':
     main(sys.argv)
