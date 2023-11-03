@@ -6,8 +6,8 @@ Description
 - note that it does not recover the absolute position of the clients, rather respects the relative distances between nodes
 
 How to use the program
-- put the instance file (.dat) under the 'res' folder
-- put the result file (.json) under 'inst' folder
+- put the instance file (.dat) under the 'inst' folder
+- put the result file (.json) under 'res' folder
 - run the program to get the map as a png image under 'out' folder
 
 How to run the program
