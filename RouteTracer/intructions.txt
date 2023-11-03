@@ -11,7 +11,7 @@ How to use the program
 - run the program to get the map as a png image under 'out' folder
 
 How to run the program
-- go under 'RouteTrace'
+- go under 'RouteTracer'
 - type: python ./src/main.py ./inst/<instXY.dat> ./res/<XY.json>
 
 
