@@ -33,9 +33,9 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, u
     traveled = best_sol.traveled
     int_load = best_sol.int_load
     
-    is_optimal = 'true'
+    is_optimal = True
     if elapsed_time >= 299:
-        is_optimal = 'false'
+        is_optimal = False
     
     obj = best_sol.objective
     sol = []
