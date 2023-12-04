@@ -1,4 +1,14 @@
 {
-    // z3: Over the limit
-    // z3_sb: Over the limit
+    "z3": {
+        "time": 300, 
+        "optimal": false, 
+        "obj": 0, 
+        "sol": []
+    },
+    "z3_sb": {
+        "time": 300, 
+        "optimal": false, 
+        "obj": 0, 
+        "sol": []
+    }
 }

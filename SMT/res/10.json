@@ -1,7 +1,13 @@
 {
+    "z3": {
+        "time": 300, 
+        "optimal": false, 
+        "obj": 0, 
+        "sol": []
+    },
     "z3_sb": {
         "time": 9, 
-        "optimal": "False", 
+        "optimal": false, 
         "obj": 245, 
         "sol": [[6], [11, 3], [12], [13], [10, 8], [5], [9, 1], [4], [7], [2]]
     }
