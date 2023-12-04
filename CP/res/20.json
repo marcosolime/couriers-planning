@@ -1,3 +1,26 @@
 {
-    
+    "gecode": {
+        "time": 300, 
+        "optimal": false, 
+        "obj": 0, 
+        "sol": []
+    },
+    "chuffed": {
+        "time": 300,
+        "optimal": false,
+        "obj": 0,
+        "sol": []
+    },
+    "gecode_sb": {
+        "time": 300, 
+        "optimal": false, 
+        "obj": 0, 
+        "sol": []
+    },
+    "chuffed_sb": {
+        "time": 300,
+        "optimal": false,
+        "obj": 0,
+        "sol": []
+    } 
 }
