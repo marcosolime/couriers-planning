@@ -4,6 +4,7 @@ import numpy.ma as ma
 from z3 import *
 import json
 import time
+import signal
 
 def read_data(lines):
     m = int(lines[0].rstrip('\n'))                      # n. couriers
@@ -148,7 +149,7 @@ def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol, is_intermediate
     to_json = {}
     to_json[str_solver] = {}
     to_json[str_solver]['time'] = round(elapsed_time)
-    to_json[str_solver]['optimal'] = str(is_optimal)
+    to_json[str_solver]['optimal'] = is_optimal
     to_json[str_solver]['obj'] = int(str(obj))
     to_json[str_solver]['sol'] = sol
 
@@ -323,5 +324,36 @@ def main(argv):
     else:
         print('Status: UNSAT')
 
+
+# Timeout utilities
+# Get out of infinite loop if no solutions are found within
+# time limit
+class TimeoutError(Exception):
+    pass
+
+def handle_timeout(signum, frame):
+    raise TimeoutError('Timeout reached!')
+
 if __name__ == '__main__':
-    main(sys.argv)
+
+    signal.signal(signal.SIGALRM, handle_timeout)
+    signal.alarm(310)
+
+    try:
+        main(sys.argv)
+
+    except KeyboardInterrupt:
+        # Handle Ctrl+C gracefully
+        print('KeyboardInterrupt: Exiting.')
+        sys.exit(0)
+
+    except TimeoutError as e:
+        print(f'Error: {e}')
+        dump_to_json('z3', 300, False, 0, [], False)
+    
+    finally:
+        # Disable alarm before exiting
+        signal.alarm(0)
+    
+
+
