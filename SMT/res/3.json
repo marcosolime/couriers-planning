@@ -1,7 +1,7 @@
 {
     "z3": {
         "time": 0, 
-        "optimal": false, 
+        "optimal": true, 
         "obj": 12, 
         "sol": [[5, 6, 3], [4, 2], [7, 1]]
     },
