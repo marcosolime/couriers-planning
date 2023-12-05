@@ -189,6 +189,26 @@ def get_sets(m, n, v, s, l, d):
     D = { i: dist for i, dist in np.ndenumerate(d) if i[0] != i[1] }    # indexed distance matrix
     return K, N, V, A, W, C, D
 
+def dump_to_json(str_data: str,
+                 elapsed_time: float,
+                 is_optimal: bool,
+                 obj: int,
+                 sol: list):
+    
+    to_json = {}
+    to_json['gurobi'] = {}
+    to_json['gurobi']['time'] = round(elapsed_time)
+    to_json['gurobi']['optimal'] = is_optimal
+    to_json['gurobi']['obj'] = obj
+    to_json['gurobi']['sol'] = sol
+
+    str_data = sys.argv[1].split('.')[0] + '.json'
+    with open('./res/' + str_data, 'w') as json_file:
+        json.dump(to_json, json_file, indent=4)
+    
+    print(to_json)
+    print('Solutions dumped to json in res folder')
+
 def main(argv):
 
     if len(argv) < 2:
@@ -245,42 +265,33 @@ def main(argv):
 
     # Collecting the variables
     # List of nodes visited by each courier
-    sol = []
-    for k in K:
-        active_arcs = [a[:-1] for a in A if x[a].x > 0.99 and a[-1] == k]
-        tmp_nodes = []
-        # Find first node
-        for arc in active_arcs:
-            if arc[0] == n+1:
-                next_node = arc[1]
-                tmp_nodes.append(next_node)
-                break
-        # Collect nodes
-        depot_reached = False
-        while not depot_reached:
+    try:
+        sol = []
+        for k in K:
+            active_arcs = [a[:-1] for a in A if x[a].x > 0.99 and a[-1] == k]
+            tmp_nodes = []
+            # Find first node
             for arc in active_arcs:
-                if arc[0] == next_node:
+                if arc[0] == n+1:
                     next_node = arc[1]
-                    if next_node == n+1:
-                        depot_reached = True
-                        break
                     tmp_nodes.append(next_node)
-        sol.append(tmp_nodes)
-    
-    # Dump to json
-    to_json = {}
-    to_json['gurobi'] = {}
-    to_json['gurobi']['time'] = round(elapsed_time)
-    to_json['gurobi']['optimal'] = is_optimal
-    to_json['gurobi']['obj'] = model.objVal
-    to_json['gurobi']['sol'] = sol
-    
-    str_data = sys.argv[1].split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    
-    print(to_json)
-    print('Solutions dumped to json in res folder')
+                    break
+            # Collect nodes
+            depot_reached = False
+            while not depot_reached:
+                for arc in active_arcs:
+                    if arc[0] == next_node:
+                        next_node = arc[1]
+                        if next_node == n+1:
+                            depot_reached = True
+                            break
+                        tmp_nodes.append(next_node)
+            sol.append(tmp_nodes)
+        dump_to_json(str_data, elapsed_time, is_optimal, int(model.objVal), sol)
+
+    except:
+        print('[INFO] No model could be found within time limit')
+        dump_to_json(str_data, elapsed_time, False, 0, []) # Empty solution
 
 if __name__ == '__main__':
     main(sys.argv)

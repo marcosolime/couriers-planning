@@ -90,6 +90,26 @@ def get_is_equal_matrix(m, l):
                 is_equal_mat[i,j] = True
     return is_equal_mat
 
+def dump_to_json(str_data: str,
+                 elapsed_time: float,
+                 is_optimal: bool,
+                 obj: int,
+                 sol: list):
+    
+    to_json = {}
+    to_json['cbc'] = {}
+    to_json['cbc']['time'] = round(elapsed_time)
+    to_json['cbc']['optimal'] = is_optimal
+    to_json['cbc']['obj'] = obj
+    to_json['cbc']['sol'] = sol
+
+    str_data = sys.argv[1].split('.')[0] + '.json'
+    with open('./res/' + str_data, 'w') as json_file:
+        json.dump(to_json, json_file, indent=4)
+    
+    print(to_json)
+    print('Solutions dumped to json in res folder')
+
 def main(argv):
     TIMELIMIT = 300     # We let the solver run for this amount of seconds
     TIMEDELTA = 2       # Time window to catch sub-optimal solutions
@@ -220,6 +240,7 @@ def main(argv):
             print(f"Feasible solution found, but may be sub-optimal")
     else:
         print("Problem is either infeasible, unbounded or undefined")
+        dump_to_json(str_data, elapsed_time, False, 0, []) # Empty solution
         sys.exit(1)
 
     # (Gathering the routes)
@@ -247,19 +268,7 @@ def main(argv):
         sol.append(tmp_nodes)
 
     # (Dumping to json)
-    to_json = {}
-    to_json['cbc'] = {}
-    to_json['cbc']['time'] = round(elapsed_time)
-    to_json['cbc']['optimal'] = is_optimal
-    to_json['cbc']['obj'] = z.varValue
-    to_json['cbc']['sol'] = sol
-
-    str_data = sys.argv[1].split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    
-    print(to_json)
-    print('Solutions dumped to json in res folder')
+    dump_to_json(str_data, elapsed_time, is_optimal, int(z.varValue), sol)
 
     # (Debugging)
     print(f'N. of couriers = {m}')

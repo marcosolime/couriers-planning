@@ -25,7 +25,30 @@ def has_solution(result, elapsed_time):
         print(f"No solution found before the timeout.")
         return False
 
-def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound):
+def dump_to_json(str_solver: str, 
+                 str_data: str,
+                 elapsed_time: float, 
+                 is_optimal: bool,
+                 obj: int,
+                 sol: list):
+    # collect info
+    to_json = {}
+    to_json[str_solver] = {}
+    to_json[str_solver]['time'] = round(elapsed_time)
+    to_json[str_solver]['optimal'] = is_optimal
+    to_json[str_solver]['obj'] = obj
+    to_json[str_solver]['sol'] = sol
+
+    # dump to json
+    str_data = str_data.split('.')[0] + '.json'
+    with open('./res/' + str_data, 'w') as json_file:
+        json.dump(to_json, json_file, indent=4)
+
+    # debug info
+    print(f'Solution saved in ./res/{str_data}')
+    print(to_json)
+
+def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound, verbose=True):
     # We get the optimal solution (last in the list)
     best_sol = result.solution[-1]
     tour = best_sol.next
@@ -56,26 +79,14 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, u
             tmp_nodes.append(next_node)
         sol.append(tmp_nodes)
     
-    # We pack the stats in a dictionary...
-    to_json = {}
-    to_json[str_solver] = {}
-    to_json[str_solver]['time'] = round(elapsed_time)
-    to_json[str_solver]['optimal'] = is_optimal
-    to_json[str_solver]['obj'] = obj
-    to_json[str_solver]['sol'] = sol
+    dump_to_json(str_solver, str_data, elapsed_time, is_optimal, obj, sol)
 
-    # ...and dump to json file
-    str_data = str_data.split('.')[0] + '.json'
-
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    print(f'Solution saved in ./res/{str_data}')
-    print(f'Tour: {tour}')
-    print(f'Courier: {courier}')
-    print(f'Traveled: {traveled}')
-    print(f'Int. load: {int_load}')
-    print(f'Upper bound: {upBound}, Lower bound: {lowBound}')
-    print(to_json)
+    if verbose:
+        print(f'Tour: {tour}')
+        print(f'Courier: {courier}')
+        print(f'Traveled: {traveled}')
+        print(f'Int. load: {int_load}')
+        print(f'Upper bound: {upBound}, Lower bound: {lowBound}')
 
 def read_data(lines):
     m = int(lines[0].rstrip('\n'))      # n. couriers
@@ -166,12 +177,12 @@ def main(argv):
     elapsed_time = time.time() - start_time
 
     # Get solution
-    # If a solution exists but we have exceeded the max. time (ie >5min)
-    # we set optimal = False and show the model
     has_sol = has_solution(result, elapsed_time)
+    
     if has_sol:
         print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound)
-
+    else:
+        dump_to_json(str_solver, str_data, 300.0, False, 0, []) # Empty solution
 
 if __name__ == '__main__':
     main(sys.argv)
