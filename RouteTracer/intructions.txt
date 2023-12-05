@@ -4,15 +4,16 @@ Description
 - this is a python script that let you visualize the routes of the couriers on a map
 - it tries to recover the xy location of the clients given the distance matrix
 - note that it does not recover the absolute position of the clients, rather respects the relative distances between nodes
+- it also creates an histogram of the traveled distance of each courier
 
 How to use the program
 - put the instance file (.dat) under the 'inst' folder
 - put the result file (.json) under 'res' folder
-- run the program to get the map as a png image under 'out' folder
+- run the program to get the graphs and plots as a png file under 'out' folder
 
 How to run the program
 - go under 'RouteTracer'
-- type: python ./src/main.py ./inst/<instXY.dat> ./res/<XY.json>
+- type: python src/main.py <instXY.dat> <XY.json>
 
 
 

@@ -95,12 +95,30 @@ def main(argv):
 
     routes = res_json[solver]['sol'] # [[1, 3, 4], [2, 5, 6]]
 
+    # (1) Traveled distances
+    distances = {}
+    for i in range(m):
+        route = routes[i] # [1, 3, 4]
+        tmp_dist = d[-1, route[0]-1] + d[route[-1]-1, -1] # depot->first, last->depot
+        #print(route)
+
+        for j in range(len(route)-1):
+            tmp_dist += d[route[j]-1, route[j+1]-1] # collect distances
+            
+        distances[f'courier_{i+1}'] = tmp_dist
+
+    # (2) Loads
+    load = {}
+    for i in range(m):
+        route = routes[i] # [1, 3, 4]
+        load[f'courier_{i+1}'] = sum([s[spot-1] for spot in route])
+
+    # (3) Create connections
     connections = {}
     for i in range(m):
         connections[f'courier_{i+1}'] = []
 
     for c, route in enumerate(routes):
-
         # only one node
         if len(route) == 1:
             connections[f'courier_{c+1}'].append((v, route[0]))
@@ -118,7 +136,11 @@ def main(argv):
             else:
                 connections[f'courier_{c+1}'].append((route[i], route[i+1]))
 
-    # Draw node on the map
+    # === DRAWING ===
+    plt.figure(figsize=[12,4])
+
+    # (1) Map
+    plt.subplot(1,3,1)
     plt.scatter(xy[:, 0], xy[:, 1], c='blue', marker='o')
     
     # To avoid mess, draw labels only on small instances
@@ -137,10 +159,29 @@ def main(argv):
             dx = end_point[0] - start_point[0]
             dy = end_point[1] - start_point[1]
             plt.arrow(start_point[0], start_point[1], dx, dy, color=color, linestyle='dashed', head_width=0.03, head_length=0.03)
-
-    # print(connections)
-    plot_path = f'./out/out_{str_data.split(".")[0]}_{solver}.png'
+    plt.title('Routes')
     plt.grid()
+
+    # (2) Distances
+    plt.subplot(1,3,2)
+    plt.bar([f'{i+1}' for i in range(m)], list(distances.values()), color='lightgreen')
+    plt.xlabel('Couriers')
+    plt.title('Traveled distances (km)')
+    plt.grid(axis='y')
+
+    # (3) Load
+    bar_width = 0.35
+    plt.subplot(1,3,3)
+    plt.bar(np.arange(m), l, bar_width, label='Capacity', color='orange')
+    plt.bar(np.arange(m), list(load.values()), bar_width, label='Load', color='skyblue')
+    plt.xlabel('Couriers')
+    plt.title('Load capacity (kg)')
+    plt.xticks(np.arange(m) + bar_width / 2, [f'{i+1}' for i in range(m)])
+    plt.legend(loc='lower right')
+    plt.grid(axis='y')
+
+    # Save
+    plot_path = f'./out/out_{str_data.split(".")[0]}_{solver}.png'
     plt.savefig(plot_path)
     plt.show()
     print(f'Info: plot saved in {plot_path}')
