@@ -12,7 +12,7 @@ You can take a look at sample results under 'out' folder.
 
 How to use the program
 - run the program to get the graphs and plots as a png file under 'out' folder
-- if the result file contains multiple solutions, you will be propted to choose which one to display
+- if the result file contains multiple solutions, you will be prompted to choose which one to display
 
 How to run the program
 - using a command line interface, navigate under 'RouteTracer'
