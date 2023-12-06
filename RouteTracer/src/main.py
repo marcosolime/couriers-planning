@@ -95,6 +95,11 @@ def main(argv):
 
     routes = res_json[solver]['sol'] # [[1, 3, 4], [2, 5, 6]]
 
+    # Empty solution: nothing to show
+    if routes == []:
+        print('Empty solution. Exiting.')
+        sys.exit(0)
+
     # (1) Traveled distances
     distances = {}
     for i in range(m):

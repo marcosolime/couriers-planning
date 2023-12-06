@@ -1,19 +1,20 @@
 Route Tracer
 
 Description
-- this is a python script that let you visualize the routes of the couriers on a map
-- it tries to recover the xy location of the clients given the distance matrix
-- note that it does not recover the absolute position of the clients, rather respects the relative distances between nodes
-- it also creates an histogram of the traveled distance of each courier
+This is a python script that let you visualize the results with graphs and plots.
+Some of the main features include:
+
+1. Route reconstruction on a 2D grid-like map
+2. Distribution of traveled distances among couriers
+3. Distribution of load capacity among couriers
+
+You can take a look at sample results under 'out' folder.
 
 How to use the program
-- put the instance file (.dat) under the 'inst' folder
-- put the result file (.json) under 'res' folder
 - run the program to get the graphs and plots as a png file under 'out' folder
+- if the result file contains multiple solutions, you will be propted to choose which one to display
 
 How to run the program
-- go under 'RouteTracer'
-- type: python src/main.py <instXY.dat> <XY.json>
-
-
-
+- using a command line interface, navigate under 'RouteTracer'
+- python src/main.py <instXY.dat> <cp/cmt/pulp/gurobi>/<XY.json>
+- Ex. python src/main.py inst01.dat cp/1.json
