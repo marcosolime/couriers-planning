@@ -8,6 +8,7 @@ import time
 import json
 import numpy as np
 import numpy.ma as ma
+import signal
 
 def read_data(lines):
     m = int(lines[0].rstrip('\n'))      # n. couriers
@@ -96,6 +97,8 @@ def dump_to_json(str_data: str,
                  obj: int,
                  sol: list):
     
+    # str_data: inst01.dat
+
     to_json = {}
     to_json['cbc'] = {}
     to_json['cbc']['time'] = round(elapsed_time)
@@ -103,7 +106,7 @@ def dump_to_json(str_data: str,
     to_json['cbc']['obj'] = obj
     to_json['cbc']['sol'] = sol
 
-    str_data = sys.argv[1].split('.')[0] + '.json'
+    str_data = str_data.split('.')[0] + '.json'
     with open('./res/' + str_data, 'w') as json_file:
         json.dump(to_json, json_file, indent=4)
     
@@ -276,5 +279,31 @@ def main(argv):
         print(f'courier {k} with total load {tot_load[k].varValue}, available {l[k]}, load occupancy {(tot_load[k].varValue/l[k])*100:.2f}%')
 
 
+# Timeout utilities
+# Get out of infinite loop if no solutions are found within
+# time limit
+class TimeoutError(Exception):
+    pass
+
+def handle_timeout(signum, frame):
+    raise TimeoutError('Timeout reached!')
+
 if __name__ == '__main__':
-    main(sys.argv)
+    signal.signal(signal.SIGALRM, handle_timeout)
+    signal.alarm(310)
+
+    try:
+        main(sys.argv)
+    
+    except KeyboardInterrupt:
+        # Handle Ctrl+C gracefully
+        print('KeyboardInterrupt: Exiting.')
+        sys.exit(0)
+
+    except TimeoutError as e:
+        print(f'Error: {e}')
+        dump_to_json(sys.argv[1], 300.0, False, 0, [])
+    
+    finally:
+        # Disable alarm before exiting
+        signal.alarm(0)
