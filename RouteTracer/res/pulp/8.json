@@ -7,7 +7,7 @@
     },
     "cbc_sb": {
         "time": 284, 
-        "optimal": true, 
+        "optimal": false, 
         "obj": 186, 
         "sol": [[9], [7], [2], [5, 4], [8], [6], [1], [3, 10]]
     }
