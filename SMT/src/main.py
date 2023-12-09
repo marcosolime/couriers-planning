@@ -21,10 +21,10 @@ def read_data(lines):
     return m, n, v, l, s, d
 
 def on_model(model, params):
-    x, obj, m, v, start_time = params
+    x, obj, m, v, start_time, str_data = params
     elapsed_time = time.time() - start_time
     sol = get_solution(m, v, model, x)
-    dump_to_json('z3', round(elapsed_time), False, model[obj], sol, True)
+    dump_to_json('z3', str_data, round(elapsed_time), False, model[obj], sol, True)
 
 def exactly_k(vars, k):
   '''
@@ -131,11 +131,18 @@ def get_solution(m, v, model, x):
         sol.append(tmp_nodes)
     return sol
 
-def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol, is_intermediate):
+def dump_to_json(str_solver: str, 
+                 str_data: str,
+                 elapsed_time: float,
+                 is_optimal: bool,
+                 obj, 
+                 sol: list, 
+                 is_intermediate: bool):
     '''
     === Arguments ===
 
     str_solver:         'z3'
+    str_data:           'inst01.dat'
     elapsed_time:       time interval to solve the instance in seconds
     is_optimal:         True is optimal, False if unknown
     obj:                best found objective value
@@ -153,7 +160,7 @@ def dump_to_json(str_solver, elapsed_time, is_optimal, obj, sol, is_intermediate
     to_json[str_solver]['obj'] = int(str(obj))
     to_json[str_solver]['sol'] = sol
 
-    str_data = sys.argv[1].split('.')[0] + '.json'
+    str_data = str_data.split('.')[0] + '.json'
     with open('./res/' + str_data, 'w') as json_file:
         json.dump(to_json, json_file, indent=4)
     
@@ -210,7 +217,7 @@ def main(argv):
 
     # Solver
     solver = Optimize()
-    params = (x, obj, m, v, time.time())
+    params = (x, obj, m, v, time.time(), str_data)
     solver.set_on_model(lambda model: on_model(model, params))
     solver.set('maxsat_engine', 'core_maxsat')
     solver.set('timeout', TIMEOUT*1000)
@@ -315,7 +322,7 @@ def main(argv):
         sol = get_solution(m, v, model, x)
 
         # Dumping to json
-        dump_to_json('z3', elapsed_time, is_optimal, model[obj], sol, False)
+        dump_to_json('z3', str_data, elapsed_time, is_optimal, model[obj], sol, False)
 
     elif status == unknown:
         print('Status: UNKNOWN')
@@ -349,7 +356,7 @@ if __name__ == '__main__':
 
     except TimeoutError as e:
         print(f'Error: {e}')
-        dump_to_json('z3', 300, False, 0, [], False)
+        dump_to_json('z3', sys.argv[1], 300.0, False, 0, [], False)
     
     finally:
         # Disable alarm before exiting
