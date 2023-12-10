@@ -61,31 +61,7 @@ Eg: `docker run pulp-img inst01.dat`
 
 Note: To run the Gurobi subpackage you need to provide your personal Gurobi license (we used an academic license). You can see how to obtain a license on the official Gurobi website. Once you have the license, under GurobiAPI folder create a folder named lic and copy your license there. Finally, build and run the docker image.
 
-## TODOs
-
-- CP
-	1. ~~Generate json for instances 0-21 with no simmetry constraints using Chuffed~~
-	2. ~~Generate json for instances 0-21 with no simmetry constraints using Gecode~~
-
-- MIP
-	* Gurobi API
-		1. ~~Implement constraint 9 (couriers with the same capacity do different routes)~~
-		2. Generate json for instances 0-21 with simmetry constraints
-		3. Generate json for instances 0-21 without simmetry constraints
-
-	* PuLP
-		1. ~~Implement constraint 9 (couriers with the same capacity do different routes)~~
-		2. Generate json for instances 0-21 with simmetry constraints
-		3. Generate json for instances 0-21 without simmetry constraints
-
-- SMT
-	1. ~~Write the model in Z3Py~~
-	2. ~~Write symmetries~~
-	3. Generate json for instances 0-21 with simmetry constraints
-	4. Generate json for instances 0-21 without simmetry constraints
-
-- Other stuff
-	* Write the project repot (Overleaf)
-	* Ideas on Warm Start
-	* Checking/Improving objective bounds
-
+## RouteTracer
+This is a python script that let you visualize the results with graphs and plots.
+To test the program, navigate under 'RouteTracer' folder and run `python src/main.py inst01.dat cp/1.json` (example instance).
+More info in the instruction file in 'RouteTracer' folder.
