@@ -11,7 +11,7 @@ To deal with this hard problem (actually, NP-Hard!), we propose three different 
 - SMT (Satisfiability Modulo Theory)
 - MIP (Mixed Integer Linear Programming)
 
-You can find the code implementation, data files and results in the correponding directories. All the folders share the same structure.
+For each variant we implemented the lightweigth and enhanced version (with symmetry breaking constraints). You can find the code implementation, data files and results in the correponding directories. All the folders share the same structure.
 
 - [CP/SMT/MIP]
 	* [inst]
@@ -20,7 +20,7 @@ You can find the code implementation, data files and results in the correponding
 	* Dockerfile
 	* requirements.txt
 
-In the inst folder there are the problem instances; in res folder there are the results in json format; in src folder you can find the model implementations. 
+'inst' folder contains the problem instances (.dat); 'res' folder is a directory for local solutions; 'src' folder contains the code.
 
 To avoid any incompatibilies or library depencencies, we "containerized" the applications in a Docker environment. After running the docker image, you can find the results in json format in the 'res' folder inside Docker Desktop.
 
@@ -29,22 +29,27 @@ We modeled our problem using MiniZinc, and solved it with Gecode and Chuffed. Ad
 
 ### How to run the program
 1. Build the image: `docker build -t <image-name> ./CP`
-2. Run the image: `docker run <image-name> <solver-name> <instance-name>`
+2. Run the image: `docker run -v .\res\CP:/app/res cp <image-name> <gecode/chuffed> <instance-name> <sym_on/sym_off>`
 
-Eg: `docker run mini-img gecode inst01.dat`
+You can find the new dumped solutions on the res folder on your local volume '.\res\CP'. Be aware that new solutions will be added to the existing files.
 
-Eg: `docker run mini-img chuffed inst01.dat`
+Examples:
+- `docker run -v .\res\CP:/app/res cp gecode inst01.dat sym_on`
+- `docker run -v .\res\CP:/app/res cp chuffed inst05.dat sym_off`
 
-## SMT - Satifiability Modulo Theory
+Note:
+Search annotations are only compatible with Gecode solver. To use Chuffed you simply comment out the search annotations and run `solve minimize obj;`.
+
+## SMT - Satisfiability Modulo Theory
 We created the model using Z3Py Python library, and solved it with Z3.
 
 ### How to run the program
 1. Build the image: `docker build -t <image-name> ./SMT`
-2. Run the image: `docker run <image-name> <instance-name>`
+2. Run the image: `docker run -v .\res\SMT:/app/res <image-name> <instance-name> <sym_on/sym_off>`
 
-Eg: `docker run z3-img inst01.dat`
-
-Eg: `docker run z3-img inst01.dat`
+Examples:
+- `docker run -v .\res\SMT:/app/res smt inst01.dat sym_on`
+- `docker run -v .\res\SMT:/app/res smt inst05.dat sym_off`
 
 ## MIP - Mixed Integer Linear Programming
 We explored two alternatives:
@@ -53,11 +58,11 @@ We explored two alternatives:
 
 ### How to run the program
 1. Build the image: `docker build -t <image-name> ./MIP/{Gurobi, PuLP}`
-2. Run the image: `docker run <image-name> <instance-name>`
+2. Run the image: `docker run -v .\res\MIP:/app/res <image-name> <instance-name> <sym_on/sym_off>`
 
-Eg: `docker run gurobi-img inst01.dat`
-
-Eg: `docker run pulp-img inst01.dat`
+Example:
+- `docker run -v .\res\MIP:/app/res pulp inst01.dat sym_on`
+- `docker run -v .\res\MIP:/app/res guru inst05.dat sym_off`
 
 Note: To run the Gurobi subpackage you need to provide your personal Gurobi license (we used an academic license). You can see how to obtain a license on the official Gurobi website. Once you have the license, under GurobiAPI folder create a folder named lic and copy your license there. Finally, build and run the docker image.
 

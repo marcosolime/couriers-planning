@@ -9,6 +9,7 @@ import numpy as np
 import numpy.ma as ma
 import time
 import json
+import os
 import gurobipy as gp
 
 def get_is_bigger_matrix(m, l):
@@ -51,7 +52,7 @@ def get_is_equal_matrix(m, l):
                 is_equal_mat[i,j] = True
     return is_equal_mat
 
-def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bigger_mat, is_equal_mat):
+def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bigger_mat, is_equal_mat, sym_on):
     '''
     A:              set of indexes corresponding to the 3D boolean matrix
     N:              set of the items
@@ -67,7 +68,8 @@ def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bi
     max_capacity:   biggest courier
     light_item:     lightest item
     is_bigger_mat:  2d boolean matrix of shape (m,m). matrix[i,j] = True if load[i] > load[j]
-    is_equal_mat:   2d boolean matrix of shape (m,m). matrix[i,j] = True if load[i] == load[j] 
+    is_equal_mat:   2d boolean matrix of shape (m,m). matrix[i,j] = True if load[i] == load[j]
+    sym_on:         either activate or not the symmetry breaking constraints
     '''
     model = gp.Model('Couriers')
 
@@ -108,22 +110,24 @@ def get_model(A, N, V, K, C, W, D, n, v, lb, ub, max_capacity, light_item, is_bi
     model.addConstrs(gp.quicksum(x[i,j,k]*D[i-1,j-1] for i in V for j in V if j != i) == dist[k] for k in K)
     model.addConstrs(z >= dist[k] for k in K)
 
-    # (Sym break 1)
-    # (Couriers with more capacity deliver more weight than smaller or equal couriers)
-    for k1 in K:
-        for k2 in K:
-            if k1 != k2 and is_bigger_mat[k1-1,k2-1]:
-                model.addConstr(tot_load[k1] >= tot_load[k2])
+    if sym_on:
 
-    # (Sym break 2)
-    # (Couriers with equal capacity do different paths)
-    for k1 in K:
-        for k2 in K:
-            if k1 > k2 and is_equal_mat[k1-1,k2-1]:
-                for i in V:
-                    for j in V:
-                        if i != j:
-                            model.addConstr(x[i,j,k1] <= 1 - x[i,j,k2])
+        # (Sym break 1)
+        # (Couriers with more capacity deliver more weight than smaller or equal couriers)
+        for k1 in K:
+            for k2 in K:
+                if k1 != k2 and is_bigger_mat[k1-1,k2-1]:
+                    model.addConstr(tot_load[k1] >= tot_load[k2])
+
+        # (Sym break 2)
+        # (Couriers with equal capacity do different paths)
+        for k1 in K:
+            for k2 in K:
+                if k1 > k2 and is_equal_mat[k1-1,k2-1]:
+                    for i in V:
+                        for j in V:
+                            if i != j:
+                                model.addConstr(x[i,j,k1] <= 1 - x[i,j,k2])
 
     # Objective: minimize the maximum distance
     model.setObjective(z, sense=gp.GRB.MINIMIZE)
@@ -189,35 +193,81 @@ def get_sets(m, n, v, s, l, d):
     D = { i: dist for i, dist in np.ndenumerate(d) if i[0] != i[1] }    # indexed distance matrix
     return K, N, V, A, W, C, D
 
-def dump_to_json(str_data: str,
+def dump_to_json(str_entry: str,
+                 str_data: str,
                  elapsed_time: float,
                  is_optimal: bool,
                  obj: int,
                  sol: list):
     
-    to_json = {}
-    to_json['gurobi'] = {}
-    to_json['gurobi']['time'] = round(elapsed_time)
-    to_json['gurobi']['optimal'] = is_optimal
-    to_json['gurobi']['obj'] = obj
-    to_json['gurobi']['sol'] = sol
+    new_entry = {}
+    new_entry[str_entry] = {}
+    new_entry[str_entry]['time'] = round(elapsed_time)
+    new_entry[str_entry]['optimal'] = is_optimal
+    new_entry[str_entry]['obj'] = obj
+    new_entry[str_entry]['sol'] = sol
 
-    str_data = sys.argv[1].split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    
-    print(to_json)
+    # Create file_name, eg. 4.json, 13.json ...
+    # str_data: inst01.dat
+    file_name = ""
+    path_file = ""
+    if str_data[4] == '0':
+        file_name = str_data[5] + '.json'
+    else:
+        file_name = str_data[4:6] + '.json'
+    path_file = './res/' + file_name
+
+    # Check if JSON file exists
+    if os.path.exists(path_file):
+
+        # Load existing JSON file
+        with open(path_file, 'r') as file:
+            data = json.load(file)
+
+        # Append the new entry
+        data.update(new_entry)
+
+        # Write the updated data back to JSON file
+        with open(path_file, 'w') as file:
+            json.dump(data, file, indent=2)
+
+        print('Existing JSON file found. New entry appended.')
+
+    else:
+        # Create a new JSON file and add the entry
+        with open(path_file, 'w') as file:
+            json.dump(new_entry, file, indent=2)
+        
+        print("New JSON file created with the entry.")
+
+    print(new_entry)
     print('Solutions dumped to json in res folder')
 
 def main(argv):
 
-    if len(argv) < 2:
+    if len(argv) < 3:
         print('Insufficient arguments')
         print('Usage: docker run <image> <instXY.dat>')
         sys.exit(1)
 
     # Read file
     str_data = argv[1]
+
+    # On-off symmetries
+    str_entry = None        # 'gurobi', 'gurobi_sb'
+    sym_on = None           # True: symmetries on, False: symmetries off
+
+    # On-off symmetries
+    if argv[2] == 'sym_on':
+        str_entry = 'gurobi_sb'
+        sym_on = True
+    elif argv[2] == 'sym_off':
+        str_entry = 'gurobi'
+        sym_on = False
+    else:
+        print('Error: last parameter should be either sym_on or sym_off')
+        sys.exit(1)
+
     lines = []
     with open('./inst/'+str_data) as data_file:
         for line in data_file:
@@ -237,7 +287,7 @@ def main(argv):
     is_equal_mat = get_is_equal_matrix(m, l)
 
     # The Model
-    model, x = get_model(A, N, V, K, C, W, D, n, v, lowBound, upBound, max_capacity, light_item, is_bigger_mat, is_equal_mat)
+    model, x = get_model(A, N, V, K, C, W, D, n, v, lowBound, upBound, max_capacity, light_item, is_bigger_mat, is_equal_mat, sym_on)
 
     # Model configs
     model.setParam('TimeLimit', 300)
@@ -287,11 +337,11 @@ def main(argv):
                             break
                         tmp_nodes.append(next_node)
             sol.append(tmp_nodes)
-        dump_to_json(str_data, elapsed_time, is_optimal, int(model.objVal), sol)
+        dump_to_json(str_entry, str_data, elapsed_time, is_optimal, int(model.objVal), sol)
 
     except:
         print('[INFO] No model could be found within time limit')
-        dump_to_json(str_data, elapsed_time, False, 0, []) # Empty solution
+        dump_to_json(str_entry, str_data, elapsed_time, False, 0, []) # Empty solution
 
 if __name__ == '__main__':
     main(sys.argv)

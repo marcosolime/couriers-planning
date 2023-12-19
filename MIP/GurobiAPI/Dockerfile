@@ -21,6 +21,7 @@ RUN mkdir -p ./src
 # Adding files
 COPY src/* ./src
 COPY inst/* ./inst
+COPY res/* ./res
 COPY lic/gurobi.lic /opt/gurobi/gurobi.lic
 
 ENTRYPOINT ["python3", "./src/main.py"]

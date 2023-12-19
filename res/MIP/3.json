@@ -1,0 +1,26 @@
+{
+    "gurobi": {
+        "time": 0, 
+        "optimal": true, 
+        "obj": 12, 
+        "sol": [[3, 6, 5], [2, 4], [1, 7]]
+    },
+    "gurobi_sb": {
+        "time": 1, 
+        "optimal": true, 
+        "obj": 12, 
+        "sol": [[5, 4, 2], [3, 7], [6, 1]]
+    },
+    "cbc": {
+        "time": 1, 
+        "optimal": true, 
+        "obj": 12, 
+        "sol": [[3, 6, 5], [2, 4], [7, 1]]
+    },
+    "cbc_sb": {
+        "time": 1, 
+        "optimal": true, 
+        "obj": 12, 
+        "sol": [[5, 6, 3], [4, 2], [7, 1]]
+    }
+}

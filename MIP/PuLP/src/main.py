@@ -6,6 +6,7 @@ from pulp import PULP_CBC_CMD
 import sys
 import time
 import json
+import os
 import numpy as np
 import numpy.ma as ma
 import signal
@@ -91,7 +92,8 @@ def get_is_equal_matrix(m, l):
                 is_equal_mat[i,j] = True
     return is_equal_mat
 
-def dump_to_json(str_data: str,
+def dump_to_json(str_entry: str,
+                 str_data: str,
                  elapsed_time: float,
                  is_optimal: bool,
                  obj: int,
@@ -99,18 +101,47 @@ def dump_to_json(str_data: str,
     
     # str_data: inst01.dat
 
-    to_json = {}
-    to_json['cbc'] = {}
-    to_json['cbc']['time'] = round(elapsed_time)
-    to_json['cbc']['optimal'] = is_optimal
-    to_json['cbc']['obj'] = obj
-    to_json['cbc']['sol'] = sol
+    new_entry = {}
+    new_entry[str_entry] = {}
+    new_entry[str_entry]['time'] = round(elapsed_time)
+    new_entry[str_entry]['optimal'] = is_optimal
+    new_entry[str_entry]['obj'] = obj
+    new_entry[str_entry]['sol'] = sol
 
-    str_data = str_data.split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    
-    print(to_json)
+    # Create file_name, eg. 4.json, 13.json ...
+    # str_data: inst01.dat
+    file_name = ""
+    path_file = ""
+    if str_data[4] == '0':
+        file_name = str_data[5] + '.json'
+    else:
+        file_name = str_data[4:6] + '.json'
+    path_file = './res/' + file_name
+
+    # Check if JSON file exists
+    if os.path.exists(path_file):
+
+        # Load existing JSON file
+        with open(path_file, 'r') as file:
+            data = json.load(file)
+
+        # Append the new entry
+        data.update(new_entry)
+
+        # Write the updated data back to JSON file
+        with open(path_file, 'w') as file:
+            json.dump(data, file, indent=2)
+
+        print('Existing JSON file found. New entry appended.')
+
+    else:
+        # Create a new JSON file and add the entry
+        with open(path_file, 'w') as file:
+            json.dump(new_entry, file, indent=2)
+        
+        print("New JSON file created with the entry.")
+
+    print(new_entry)
     print('Solutions dumped to json in res folder')
 
 def main(argv):
@@ -118,13 +149,29 @@ def main(argv):
     TIMEDELTA = 2       # Time window to catch sub-optimal solutions
 
     # Check arguments
-    if len(argv) < 2:
+    if len(argv) < 3:
         print('Insufficient arguments')
-        print('Usage: docker run <image> <instXY.dat>')
+        print('Usage: docker run <image> <instXY.dat> <sym_on/sym_off')
         sys.exit(1)
     
     # Read file
     str_data = argv[1]
+
+    # On-off symmetries
+    str_entry = None        # 'cbc', 'cbc_sb'
+    sym_on = None           # True: symmetries on, False: symmetries off
+
+    # On-off symmetries
+    if argv[2] == 'sym_on':
+        str_entry = 'cbc_sb'
+        sym_on = True
+    elif argv[2] == 'sym_off':
+        str_entry = 'cbc'
+        sym_on = False
+    else:
+        print('Error: last parameter should be either sym_on or sym_off')
+        sys.exit(1)
+
     lines = []
     with open('./inst/'+str_data) as data_file:
         for line in data_file:
@@ -208,21 +255,23 @@ def main(argv):
         model += lpSum([x[i][j][k]*d[i,j] for i in range(v) for j in range(v)]) == dist[k]
         model += z >= dist[k]
     
-    # (Sym break 1)
-    # (Couriers with more capacity deliver more weight than smaller couriers)
-    for k1 in range(m):
-        for k2 in range(m):
-            if k1!=k2 and is_bigger_mat[k1,k2]:
-                model += tot_load[k1] >= tot_load[k2]
+    if sym_on:
 
-    # (Sym break 2)
-    # (Courieres with same capacity do different paths)
-    for k1 in range(m):
-        for k2 in range(m):
-            if k1>k2 and is_equal_mat[k1,k2]:
-                for i in range(v):
-                    for j in range(v):
-                        model += x[i][j][k1] + x[i][j][k2] <= 1
+        # (Sym break 1)
+        # (Couriers with more capacity deliver more weight than smaller couriers)
+        for k1 in range(m):
+            for k2 in range(m):
+                if k1!=k2 and is_bigger_mat[k1,k2]:
+                    model += tot_load[k1] >= tot_load[k2]
+
+        # (Sym break 2)
+        # (Courieres with same capacity do different paths)
+        for k1 in range(m):
+            for k2 in range(m):
+                if k1>k2 and is_equal_mat[k1,k2]:
+                    for i in range(v):
+                        for j in range(v):
+                            model += x[i][j][k1] + x[i][j][k2] <= 1
 
     # (Solving)
     start_time = time.time()
@@ -243,7 +292,7 @@ def main(argv):
             print(f"Feasible solution found, but may be sub-optimal")
     else:
         print("Problem is either infeasible, unbounded or undefined")
-        dump_to_json(str_data, elapsed_time, False, 0, []) # Empty solution
+        dump_to_json(str_entry, str_data, elapsed_time, False, 0, []) # Empty solution
         sys.exit(1)
 
     # (Gathering the routes)
@@ -271,7 +320,7 @@ def main(argv):
         sol.append(tmp_nodes)
 
     # (Dumping to json)
-    dump_to_json(str_data, elapsed_time, is_optimal, int(z.varValue), sol)
+    dump_to_json(str_entry, str_data, elapsed_time, is_optimal, int(z.varValue), sol)
 
     # (Debugging)
     print(f'N. of couriers = {m}')
@@ -302,8 +351,15 @@ if __name__ == '__main__':
 
     except TimeoutError as e:
         print(f'Error: {e}')
-        dump_to_json(sys.argv[1], 300.0, False, 0, [])
-    
+
+        # Dump to json 
+        str_dummy = None
+        if sys.argv[2] == 'sym_on':
+            str_dummy = 'cbc_sb'
+        else:
+            str_dummy = 'cbc'
+        dump_to_json(str_dummy, sys.argv[1], 300.0, False, 0, [])
+
     finally:
         # Disable alarm before exiting
         signal.alarm(0)

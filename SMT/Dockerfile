@@ -21,5 +21,6 @@ RUN mkdir -p ./src
 # Adding files
 COPY src/* ./src
 COPY inst/* ./inst
+COPY res/* ./res
 
 ENTRYPOINT ["python3", "./src/main.py"]

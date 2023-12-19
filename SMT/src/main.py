@@ -21,10 +21,10 @@ def read_data(lines):
     return m, n, v, l, s, d
 
 def on_model(model, params):
-    x, obj, m, v, start_time, str_data = params
+    x, obj, m, v, start_time, str_data, str_entry = params
     elapsed_time = time.time() - start_time
     sol = get_solution(m, v, model, x)
-    dump_to_json('z3', str_data, round(elapsed_time), False, model[obj], sol, True)
+    dump_to_json(str_entry, str_data, round(elapsed_time), False, model[obj], sol, True)
 
 def exactly_k(vars, k):
   '''
@@ -131,7 +131,7 @@ def get_solution(m, v, model, x):
         sol.append(tmp_nodes)
     return sol
 
-def dump_to_json(str_solver: str, 
+def dump_to_json(str_entry: str, 
                  str_data: str,
                  elapsed_time: float,
                  is_optimal: bool,
@@ -141,7 +141,7 @@ def dump_to_json(str_solver: str,
     '''
     === Arguments ===
 
-    str_solver:         'z3'
+    str_entry:         'z3' or 'z3_sb'
     str_data:           'inst01.dat'
     elapsed_time:       time interval to solve the instance in seconds
     is_optimal:         True is optimal, False if unknown
@@ -153,22 +153,51 @@ def dump_to_json(str_solver: str,
 
     Writes the solution under res folder in json format
     '''
-    to_json = {}
-    to_json[str_solver] = {}
-    to_json[str_solver]['time'] = round(elapsed_time)
-    to_json[str_solver]['optimal'] = is_optimal
-    to_json[str_solver]['obj'] = int(str(obj))
-    to_json[str_solver]['sol'] = sol
+    new_entry = {}
+    new_entry[str_entry] = {}
+    new_entry[str_entry]['time'] = round(elapsed_time)
+    new_entry[str_entry]['optimal'] = is_optimal
+    new_entry[str_entry]['obj'] = int(str(obj))
+    new_entry[str_entry]['sol'] = sol
 
-    str_data = str_data.split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
-    
+    # Create file_name, eg. 4.json, 13.json ...
+    # str_data: inst01.dat
+    file_name = ""
+    path_file = ""
+    if str_data[4] == '0':
+        file_name = str_data[5] + '.json'
+    else:
+        file_name = str_data[4:6] + '.json'
+    path_file = './res/' + file_name
+
+    # Check if JSON file exists
+    if os.path.exists(path_file):
+
+        # Load existing JSON file
+        with open(path_file, 'r') as file:
+            data = json.load(file)
+
+        # Append the new entry
+        data.update(new_entry)
+
+        # Write the updated data back to JSON file
+        with open(path_file, 'w') as file:
+            json.dump(data, file, indent=2)
+
+        print('Existing JSON file found. New entry appended.')
+
+    else:
+        # Create a new JSON file and add the entry
+        with open(path_file, 'w') as file:
+            json.dump(new_entry, file, indent=2)
+        
+        print("New JSON file created with the entry.")
+        
     if is_intermediate:
         print('Intermediate solution dumped to json in res folder')
     else:
         print('Final solution dumped to json in res folder')
-    print(to_json)
+    print(new_entry)
     print()
     
 def print_courier_load(m, model, tot_load, l):
@@ -185,13 +214,27 @@ def main(argv):
     TIMEOUT = 300
 
     # Argument check
-    if len(argv) < 2:
+    if len(argv) < 3:
         print('Insufficient arguments')
-        print('Usage: docker run <image> <instXY.dat>')
+        print('Usage: docker run <image> <instXY.dat> <sym_on/sym_off>')
         sys.exit(1)
     
     # Read file
     str_data = argv[1]
+    str_entry = None        # 'z3', 'z3_sb'
+    sym_on = None           # True: symmetries on, False: symmetries off
+
+    # On-off symmetries
+    if argv[2] == 'sym_on':
+        str_entry = 'z3_sb'
+        sym_on = True
+    elif argv[2] == 'sym_off':
+        str_entry = 'z3'
+        sym_on = False
+    else:
+        print('Error: last parameter should be either sym_on or sym_off')
+        sys.exit(1)
+
     lines = []
     with open('./inst/'+str_data) as data_file:
         for line in data_file:
@@ -217,7 +260,7 @@ def main(argv):
 
     # Solver
     solver = Optimize()
-    params = (x, obj, m, v, time.time(), str_data)
+    params = (x, obj, m, v, time.time(), str_data, str_entry)
     solver.set_on_model(lambda model: on_model(model, params))
     solver.set('maxsat_engine', 'core_maxsat')
     solver.set('timeout', TIMEOUT*1000)
@@ -271,19 +314,21 @@ def main(argv):
 
     # (Sym break 1)
     # (Couriers with more capacity deliver more weight than smaller couriers)
-    for k1 in range(m):
-        for k2 in range(m):
-            if k1!=k2 and is_bigger_mat[k1,k2]:
-                solver.add(tot_load[k1] >= tot_load[k2])
+    if sym_on:
 
-    # (Sym break 2)
-    # (Couriers with same capacity do different routes)
-    for k1 in range(m):
-        for k2 in range(m):
-            if k1>k2 and is_equal_mat[k1,k2]:
-                for i in range(v):
-                    for j in range(v):
-                        solver.add(Not(And(x[i][j][k1], x[i][j][k2])))
+        for k1 in range(m):
+            for k2 in range(m):
+                if k1!=k2 and is_bigger_mat[k1,k2]:
+                    solver.add(tot_load[k1] >= tot_load[k2])
+
+        # (Sym break 2)
+        # (Couriers with same capacity do different routes)
+        for k1 in range(m):
+            for k2 in range(m):
+                if k1>k2 and is_equal_mat[k1,k2]:
+                    for i in range(v):
+                        for j in range(v):
+                            solver.add(Not(And(x[i][j][k1], x[i][j][k2])))
 
 
     # (OBJ) Minimize the longest distance
@@ -322,7 +367,7 @@ def main(argv):
         sol = get_solution(m, v, model, x)
 
         # Dumping to json
-        dump_to_json('z3', str_data, elapsed_time, is_optimal, model[obj], sol, False)
+        dump_to_json(str_entry, str_data, elapsed_time, is_optimal, model[obj], sol, False)
 
     elif status == unknown:
         print('Status: UNKNOWN')
@@ -356,7 +401,7 @@ if __name__ == '__main__':
 
     except TimeoutError as e:
         print(f'Error: {e}')
-        dump_to_json('z3', sys.argv[1], 300.0, False, 0, [], False)
+        dump_to_json(str_entry, sys.argv[1], 300.0, False, 0, [], False)
     
     finally:
         # Disable alarm before exiting

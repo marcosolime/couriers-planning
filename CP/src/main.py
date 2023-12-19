@@ -10,6 +10,7 @@ import datetime
 import time
 import sys
 import json
+import os
 
 # Print the solution
 def has_solution(result, elapsed_time):
@@ -25,30 +26,59 @@ def has_solution(result, elapsed_time):
         print(f"No solution found before the timeout.")
         return False
 
-def dump_to_json(str_solver: str, 
-                 str_data: str,
+def dump_to_json(str_data: str,
+                 str_entry: str,
                  elapsed_time: float, 
                  is_optimal: bool,
                  obj: int,
                  sol: list):
-    # collect info
-    to_json = {}
-    to_json[str_solver] = {}
-    to_json[str_solver]['time'] = round(elapsed_time)
-    to_json[str_solver]['optimal'] = is_optimal
-    to_json[str_solver]['obj'] = obj
-    to_json[str_solver]['sol'] = sol
+    
+    # Collect info for the new entry 
+    new_entry = {}
+    new_entry[str_entry] = {}
+    new_entry[str_entry]['time'] = round(elapsed_time)
+    new_entry[str_entry]['optimal'] = is_optimal
+    new_entry[str_entry]['obj'] = obj
+    new_entry[str_entry]['sol'] = sol
 
-    # dump to json
-    str_data = str_data.split('.')[0] + '.json'
-    with open('./res/' + str_data, 'w') as json_file:
-        json.dump(to_json, json_file, indent=4)
+    # Create file_name, eg. 4.json, 13.json ...
+    # str_data: inst01.dat
+    file_name = ""
+    path_file = ""
+    if str_data[4] == '0':
+        file_name = str_data[5] + '.json'
+    else:
+        file_name = str_data[4:6] + '.json'
+    path_file = './res/' + file_name
+
+    # Check if JSON file exists
+    if os.path.exists(path_file):
+
+        # Load existing JSON file
+        with open(path_file, 'r') as file:
+            data = json.load(file)
+
+        # Append the new entry
+        data.update(new_entry)
+
+        # Write the updated data back to JSON file
+        with open(path_file, 'w') as file:
+            json.dump(data, file, indent=2)
+
+        print('Existing JSON file found. New entry appended.')
+
+    else:
+        # Create a new JSON file and add the entry
+        with open(path_file, 'w') as file:
+            json.dump(new_entry, file, indent=2)
+        
+        print("New JSON file created with the entry.")
 
     # debug info
-    print(f'Solution saved in ./res/{str_data}')
-    print(to_json)
+    print(f'Solution saved in {path_file}')
+    print(new_entry)
 
-def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound, verbose=True):
+def print_solution(result, m, n, elapsed_time, str_entry, str_data, lowBound, upBound, verbose=True):
     # We get the optimal solution (last in the list)
     best_sol = result.solution[-1]
     tour = best_sol.next
@@ -79,7 +109,7 @@ def print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, u
             tmp_nodes.append(next_node)
         sol.append(tmp_nodes)
     
-    dump_to_json(str_solver, str_data, elapsed_time, is_optimal, obj, sol)
+    dump_to_json(str_data, str_entry, elapsed_time, is_optimal, obj, sol)
 
     if verbose:
         print(f'Tour: {tour}')
@@ -132,19 +162,32 @@ def low_up_bound(d, n, v):
 # Main
 # Usage: python3 main.py <gecode/chuffed> <instXY.dat>
 def main(argv):
-    if len(argv) < 3:
+    if len(argv) < 4:
         print('Error: Insufficient n. of parameters provided')
-        print(f'Expected: 2, provided: {len(argv)-1}')
-        print('Usage: docker run --rm <image-name> <gecode/chuffed> <data.dat>')
+        print(f'Expected: 3, provided: {len(argv)-1}')
+        print('Usage: docker run --rm <image-name> <gecode/chuffed> <data.dat> <sym_on/sym_off>')
         sys.exit(1)
     
     # Gather parameters
     str_solver = str(argv[1])           # solver name
-    str_data = str(argv[2])             # data file (.dat) 
+    str_data = str(argv[2])             # data file (.dat)
+    
+    # Symmetry activation on-off
+    str_entry = None                    # entry name, eg. chuffed_sb
+    str_path = None                     # mzn path file
+    if str(argv[3]) == 'sym_on':
+        str_entry = str_solver + '_sb'
+        str_path = './src/model_sym.mzn'
+    elif str(argv[3]) == 'sym_off':
+        str_entry = str_solver
+        str_path = './src/model_no_sym.mzn'
+    else:
+        print('Error: last parameter should be either sym_on or sym_off.')
+        sys.exit(1)
 
     # Create MiniZinc model
     solver = Solver.lookup(str_solver)
-    model = Model('./src/model.mzn')
+    model = Model(str_path)
     instance = Instance(solver, model)
 
     # Read file
@@ -180,9 +223,9 @@ def main(argv):
     has_sol = has_solution(result, elapsed_time)
     
     if has_sol:
-        print_solution(result, m, n, elapsed_time, str_solver, str_data, lowBound, upBound)
+        print_solution(result, m, n, elapsed_time, str_entry, str_data, lowBound, upBound)
     else:
-        dump_to_json(str_solver, str_data, 300.0, False, 0, []) # Empty solution
+        dump_to_json(str_data, str_entry, 300.0, False, 0, []) # Empty solution
 
 if __name__ == '__main__':
     main(sys.argv)
