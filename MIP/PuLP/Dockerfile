@@ -1,4 +1,4 @@
-FROM pulp/pulp:latest
+FROM --platform=linux/amd64 pulp/pulp:latest
 
 # Copy Python script and data folder
 WORKDIR /app
