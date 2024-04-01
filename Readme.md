@@ -74,3 +74,6 @@ Note: To run the Gurobi subpackage you need to provide your personal Gurobi lice
 This is a python script that let you visualize the results with graphs and plots.
 To test the program, navigate under 'RouteTracer' folder and run `python src/main.py inst01.dat cp/1.json` (example instance).
 More info in the instruction file in 'RouteTracer' folder.
+
+## License
+MIT license
