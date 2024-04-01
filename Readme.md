@@ -1,5 +1,7 @@
 # Vehicle Routing Problem
 
+![CP paint](/img/cp_paint.png)
+
 ## Problem Description
 We are given a fleet of couriers and a set of items that must be distributed to a set of clients. All the couriers start at the same location (depot), whereas the customers are located in different positions on a 2D flat region. Each courier comes with a fixed capacity, meaning that we can stuff items till a given threshold; each item has its relative weight.
 The goal of the problem is to plan a route for each courier, reaching all the customers while not exceeding the courier capacities. To be fair, we want to minimize the longest distance travelled by any courier. This way, we expect to have a balanced division among the drivers in term of traveled distance.
@@ -23,6 +25,8 @@ For each variant we implemented the lightweigth and enhanced version (with symme
 'inst' folder contains the problem instances (.dat); 'res' folder is a directory for local solutions; 'src' folder contains the code.
 
 To avoid any incompatibilies or library depencencies, we "containerized" the applications in a Docker environment. After running the docker image, you can find the results in json format in the 'res' folder inside Docker Desktop.
+
+![SMT paint](/img/smt_paint.png)
 
 ## CP - Constraint Programming
 We modeled our problem using MiniZinc, and solved it with Gecode and Chuffed. Additionally, we exploited several search strategies to increase convergence speed.
